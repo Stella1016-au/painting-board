@@ -12,7 +12,9 @@ let btnReset, btnSave, inputFileName;
 let btnPen, btnEraser, btnPicker, btnPhoto;
 let sliderWeight;
 let lblWeightValue;
-let statusPanel;
+let lblStatusMode, valStatusMode;
+let lblStatusColor, valStatusColorSwatch;
+let lblStatusWeight, valStatusWeight;
 let colorPalette = [];
 
 // 8. 20개 이상의 색상 배열 (총 24개 색상 구성)
@@ -110,10 +112,40 @@ function setup() {
     });
   }
 
-  // 현재 도구·색상·굵기 표시 (색상 팔레트 오른쪽)
-  statusPanel = createDiv();
-  statusPanel.addClass('status-panel');
-  statusPanel.position(600, paletteY + 1);
+  // 현재 도구·색상·굵기 표시 (색상 팔레트 오른쪽, span + style 사용)
+  let statusX = 600;
+  let statusY = paletteY + 2;
+
+  lblStatusMode = createSpan('모드 ');
+  lblStatusMode.position(statusX, statusY);
+  lblStatusMode.style('font-weight', 'bold');
+  lblStatusMode.style('color', '#555');
+
+  valStatusMode = createSpan('펜');
+  valStatusMode.position(statusX + 32, statusY);
+
+  lblStatusColor = createSpan('색상 ');
+  lblStatusColor.position(statusX + 75, statusY);
+  lblStatusColor.style('font-weight', 'bold');
+  lblStatusColor.style('color', '#555');
+
+  valStatusColorSwatch = createSpan('');
+  valStatusColorSwatch.position(statusX + 115, statusY);
+  valStatusColorSwatch.style('display', 'inline-block');
+  valStatusColorSwatch.style('width', '18px');
+  valStatusColorSwatch.style('height', '18px');
+  valStatusColorSwatch.style('border', '1px solid #888');
+  valStatusColorSwatch.style('border-radius', '50%');
+  valStatusColorSwatch.style('background-color', currentColor);
+
+  lblStatusWeight = createSpan('굵기 ');
+  lblStatusWeight.position(statusX + 145, statusY);
+  lblStatusWeight.style('font-weight', 'bold');
+  lblStatusWeight.style('color', '#555');
+
+  valStatusWeight = createSpan(currentWeight + 'px');
+  valStatusWeight.position(statusX + 180, statusY);
+
   updateStatusPanel();
 }
 
@@ -203,17 +235,14 @@ function updatePenWeight() {
 const MODE_LABELS = { pen: '펜', eraser: '지우개', picker: '색상 추출' };
 
 function updateStatusPanel() {
-  if (!statusPanel) return;
+  if (!valStatusMode) return;
 
-  let modeLabel = MODE_LABELS[mode] || mode;
+  valStatusMode.html(MODE_LABELS[mode] || mode);
+
   let swatchColor = mode === 'eraser' ? '#ffffff' : currentColor;
+  valStatusColorSwatch.style('background-color', swatchColor);
 
-  statusPanel.html(
-    `<span class="status-item"><span class="status-label">모드</span> ${modeLabel}</span>` +
-    `<span class="status-item"><span class="status-label">색상</span>` +
-    `<span class="status-swatch" style="background-color:${swatchColor}"></span></span>` +
-    `<span class="status-item"><span class="status-label">굵기</span> ${currentWeight}px</span>`
-  );
+  valStatusWeight.html(currentWeight + 'px');
 }
 
 // UI 버튼 활성화 시각 효과 및 모드 변경 제어 함수
