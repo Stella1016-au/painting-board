@@ -5,3 +5,34 @@ html, body {
 canvas {
   display: block;
 }
+
+.status-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  color: #333;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.status-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #888;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

@@ -10,7 +10,9 @@ let a = 0;
 // UI 요소들을 위한 변수
 let btnReset, btnSave, inputFileName;
 let btnPen, btnEraser, btnPicker, btnPhoto;
-let selectWeight;
+let sliderWeight;
+let lblWeightValue;
+let statusPanel;
 let colorPalette = [];
 
 // 8. 20개 이상의 색상 배열 (총 24개 색상 구성)
@@ -58,7 +60,7 @@ function setup() {
   btnPen.style('background-color', '#ddd'); // 기본 활성화 표시
 
   // [4. 지우기 버튼]
-  btnEraser = createButton('🧼 지우개 (폭발)');
+  btnEraser = createButton('🧼 지우개');
   btnEraser.position(365, uiY);
   btnEraser.mousePressed(() => setMode('eraser'));
 
@@ -72,21 +74,17 @@ function setup() {
   btnPhoto.position(575, uiY);
   btnPhoto.mousePressed(takePhoto);
 
-  // [7. 펜의 굵기 변경 (5단계 이상 select 박스)]
+  // [7. 펜 굵기 조절 (슬라이더 1~50px)
   let lblWeight = createSpan('굵기: ');
   lblWeight.position(680, uiY + 2);
-  
-  selectWeight = createSelect();
-  selectWeight.position(715, uiY);
-  selectWeight.option('1단계 (가늘게)', '2');
-  selectWeight.option('2단계 (보통)', '5');
-  selectWeight.option('3단계 (통통하게)', '12');
-  selectWeight.option('4단계 (두껍게)', '25');
-  selectWeight.option('5단계 (아주두껍게)', '45');
-  selectWeight.selected('5'); // 기본값 2단계(5)
-  selectWeight.changed(() => {
-    currentWeight = int(selectWeight.value());
-  });
+
+  sliderWeight = createSlider(1, 50, currentWeight, 1);
+  sliderWeight.position(715, uiY + 4);
+  sliderWeight.size(90);
+  sliderWeight.input(updatePenWeight);
+
+  lblWeightValue = createSpan(currentWeight + 'px');
+  lblWeightValue.position(810, uiY + 2);
 
   // [8. 색상 선택 팔레트 생성 (20개 이상)]
   let paletteY = uiY + 40;
@@ -108,8 +106,15 @@ function setup() {
     btnColor.mousePressed(() => {
       currentColor = col;
       if (mode === 'eraser' || mode === 'picker') setMode('pen');
+      updateStatusPanel();
     });
   }
+
+  // 현재 도구·색상·굵기 표시 (색상 팔레트 오른쪽)
+  statusPanel = createDiv();
+  statusPanel.addClass('status-panel');
+  statusPanel.position(600, paletteY + 1);
+  updateStatusPanel();
 }
 
 function draw() {
@@ -120,18 +125,6 @@ function draw() {
   rect(0, canvasHeight, canvasWidth, 100); // UI 배경 영역
   stroke(200);
   line(0, canvasHeight, canvasWidth, canvasHeight); // 경계선
-  
-  // 현재 상태 텍스트 안내
-  fill(50);
-  noStroke();
-  textSize(12);
-  text(`현재 모드: ${mode.toUpperCase()}  |  굵기: ${currentWeight}px`, 600, canvasHeight + 75);
-  
-  // 현재 선택된 색상 미리보기 원
-  text("선택된 색:", 485, canvasHeight + 75);
-  fill(currentColor);
-  stroke(0);
-  ellipse(550, canvasHeight + 71, 14, 14);
   pop();
 
   // 3. 마우스 드래그를 이용한 그리기/지우기/색상추출 기능 작동
@@ -145,16 +138,11 @@ function draw() {
         strokeWeight(currentWeight);
         line(pmouseX, pmouseY, mouseX, mouseY);
       } 
-      // [4. 지우기 (상상력 조건: 폭발하며 퍼지는 먼지 지우개 효과)]
+      // [4. 지우기]
       else if (mode === 'eraser') {
-        fill(255);
-        noStroke();
-        for (let i = 0; i < 6; i++) {
-          let offsetX = random(-currentWeight * 1.5, currentWeight * 1.5);
-          let offsetY = random(-currentWeight * 1.5, currentWeight * 1.5);
-          let rSize = random(2, currentWeight * 0.8);
-          ellipse(mouseX + offsetX, mouseY + offsetY, rSize, rSize);
-        }
+        stroke(255);
+        strokeWeight(currentWeight);
+        line(pmouseX, pmouseY, mouseX, mouseY);
       } 
       // [5. 색상추출 (무제한)]
       else if (mode === 'picker') {
@@ -163,7 +151,11 @@ function draw() {
         let g = int(c[1]);
         let b = int(c[2]);
         // 추출한 RGB 값을 Hex 코드로 변환하여 적용
-        currentColor = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        let picked = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        if (picked !== currentColor) {
+          currentColor = picked;
+          updateStatusPanel();
+        }
       }
     }
   }
@@ -202,6 +194,28 @@ function takePhoto() {
   pop();
 }
 
+function updatePenWeight() {
+  currentWeight = sliderWeight.value();
+  lblWeightValue.html(currentWeight + 'px');
+  updateStatusPanel();
+}
+
+const MODE_LABELS = { pen: '펜', eraser: '지우개', picker: '색상 추출' };
+
+function updateStatusPanel() {
+  if (!statusPanel) return;
+
+  let modeLabel = MODE_LABELS[mode] || mode;
+  let swatchColor = mode === 'eraser' ? '#ffffff' : currentColor;
+
+  statusPanel.html(
+    `<span class="status-item"><span class="status-label">모드</span> ${modeLabel}</span>` +
+    `<span class="status-item"><span class="status-label">색상</span>` +
+    `<span class="status-swatch" style="background-color:${swatchColor}"></span></span>` +
+    `<span class="status-item"><span class="status-label">굵기</span> ${currentWeight}px</span>`
+  );
+}
+
 // UI 버튼 활성화 시각 효과 및 모드 변경 제어 함수
 function setMode(newMode) {
   mode = newMode;
@@ -214,4 +228,5 @@ function setMode(newMode) {
   if (mode === 'pen') btnPen.style('background-color', '#ddd');
   if (mode === 'eraser') btnEraser.style('background-color', '#ddd');
   if (mode === 'picker') btnPicker.style('background-color', '#ddd');
+  updateStatusPanel();
 }
